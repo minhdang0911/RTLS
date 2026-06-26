@@ -15,7 +15,7 @@ const AlertPanel = ({ zoneEvents }) => {
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="alert-heading">
-          Canh bao — {alerts.length} su kien
+          ⚠ Cảnh báo — {alerts.length} sự kiện phát hiện
         </div>
         <div className="alert-tags">
           {alerts.map((alert, i) => {
@@ -23,7 +23,7 @@ const AlertPanel = ({ zoneEvents }) => {
             return (
               <span key={i} className="alert-tag">
                 <User size={11} />
-                {info?.name || alert.tag_id} vao Nha ve sinh
+                {info?.name || alert.tag_id} vào Nhà vệ sinh
               </span>
             )
           })}
