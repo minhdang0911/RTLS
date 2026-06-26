@@ -31,8 +31,8 @@ const ZONES = [
     alert_threshold_seconds: null, // không alert
     polygon: [
       { x: 11, y: 8  },
-      { x: 19, y: 8  },
-      { x: 19, y: 15 },
+      { x: 16, y: 8  },
+      { x: 16, y: 15 },
       { x: 11, y: 15 }
     ]
   }

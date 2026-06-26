@@ -18,7 +18,7 @@ export const ZONES = [
     name: 'Phong R&D',
     color: '#3FB950',
     canvasFill: 'rgba(63,185,80,0.13)',
-    x: 11, y: 8, w: 8, h: 7
+    x: 11, y: 8, w: 5, h: 7
   }
 ]
 
