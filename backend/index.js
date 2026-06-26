@@ -1,3 +1,4 @@
+import http from 'http'
 import express from 'express'
 import { WebSocketServer } from 'ws'
 import dotenv from 'dotenv'
@@ -15,6 +16,11 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*')
   res.header('Access-Control-Allow-Headers', '*')
   next()
+})
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', time: new Date().toISOString() })
 })
 
 // API lấy lịch sử zone events
@@ -56,19 +62,20 @@ const start = async () => {
   const mqttPort = process.env.MQTT_PORT || 1883
   startBroker(mqttPort)
 
-  // 3. Khởi động WebSocket server
-  const wsPort = process.env.WS_PORT || 3002
-  const wss = new WebSocketServer({ port: wsPort })
+  // 3. Tạo HTTP server dùng chung cho Express + WebSocket
+  const server = http.createServer(app)
+
   const clients = []
+  const wss = new WebSocketServer({ server })
 
   wss.on('connection', (ws) => {
     clients.push(ws)
-    console.log('Frontend connected via WebSocket')
+    console.log(`[WS] Frontend connected — ${clients.length} client(s) online`)
 
     ws.on('close', () => {
       const index = clients.indexOf(ws)
       if (index > -1) clients.splice(index, 1)
-      console.log('Frontend disconnected')
+      console.log(`[WS] Frontend disconnected — ${clients.length} client(s) online`)
     })
   })
 
@@ -79,11 +86,12 @@ const start = async () => {
     startSubscriber(process.env.MQTT_BROKER_URL)
   }, 1000)
 
-  // 5. Khởi động Express
-  const port = process.env.PORT || 3001
-  app.listen(port, () => {
-    console.log(`Backend running on port ${port}`)
-    console.log(`WebSocket running on port ${wsPort}`)
+  // 5. Khởi động server (HTTP + WS dùng chung 1 port)
+  const port = process.env.PORT || 3003
+  server.listen(port, () => {
+    console.log(`[HTTP] API running on port ${port}`)
+    console.log(`[WS]   WebSocket on ws://localhost:${port}`)
+    console.log(`[MQTT] Broker on port ${mqttPort}`)
   })
 }
 
