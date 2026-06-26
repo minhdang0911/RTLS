@@ -11,7 +11,7 @@ const useWebSocket = (url) => {
 
   // Gọi API lấy zone events lịch sử khi load trang
   useEffect(() => {
-    fetch('http://localhost:3003/api/zone-events')
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3003'}/api/zone-events`)
       .then(res => res.json())
       .then(data => setZoneEvents(data))
       .catch(err => console.error('Fetch zone events error:', err))

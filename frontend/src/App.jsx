@@ -6,7 +6,7 @@ import useWebSocket from './hooks/useWebSocket'
 import './App.css'
 
 function App() {
-  const { employees, zoneEvents } = useWebSocket('ws://localhost:3002')
+  const { employees, zoneEvents } = useWebSocket(import.meta.env.VITE_WS_URL || 'ws://localhost:3002')
 
   const empList = Object.values(employees)
   const activeZones = new Set(empList.map(e => e.zone_id).filter(Boolean)).size
