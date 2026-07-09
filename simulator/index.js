@@ -3,8 +3,8 @@ import { config } from 'dotenv'
 config() // load .env nếu có (VPS: tạo từ .env.example)
 
 // ─── Config từ biến môi trường (hỗ trợ cả local lẫn VPS) ─────────────────
-const MQTT_URL = process.env.MQTT_URL    || 'mqtt://broker.hivemq.com:1883'
-const API_URL  = process.env.API_URL     || 'http://localhost:3003'
+const MQTT_URL = process.env.MQTT_URL || 'mqtt://broker.hivemq.com:1883'
+const API_URL = process.env.API_URL || 'http://localhost:3003'
 const MQTT_TOPIC = process.env.MQTT_TOPIC || 'rtls/location/ikyrts_dashboard'
 
 console.log(`[Simulator] Config: MQTT=${MQTT_URL}, API=${API_URL}, TOPIC=${MQTT_TOPIC}`)
@@ -13,23 +13,23 @@ const client = mqtt.connect(MQTT_URL)
 
 // ─── 4 Anchor nodes cố định trên mặt bằng 19×15m ─────────────────────────
 const ANCHORS = [
-  { id: 'A0', name: 'Anchor Tây-Bắc',  x: 0,  y: 0  },
-  { id: 'A1', name: 'Anchor Đông-Bắc', x: 19, y: 0  },
-  { id: 'A2', name: 'Anchor Tây-Nam',  x: 0,  y: 15 },
+  { id: 'A0', name: 'Anchor Tây-Bắc', x: 0, y: 0 },
+  { id: 'A1', name: 'Anchor Đông-Bắc', x: 19, y: 0 },
+  { id: 'A2', name: 'Anchor Tây-Nam', x: 0, y: 15 },
   { id: 'A3', name: 'Anchor Đông-Nam', x: 19, y: 15 },
 ]
 
 // ─── Waypoints di chuyển ──────────────────────────────────────────────────
 const WAYPOINTS = [
-  { x: 8,  y: 4  }, // Zone A - giữa khu hàn
-  { x: 3,  y: 5  }, // Zone A - góc trái
-  { x: 13, y: 3  }, // Zone A - góc phải
-  { x: 2,  y: 11 }, // Zone B - nhà vệ sinh
+  { x: 8, y: 4 }, // Zone A - giữa khu hàn
+  { x: 3, y: 5 }, // Zone A - góc trái
+  { x: 13, y: 3 }, // Zone A - góc phải
+  { x: 2, y: 11 }, // Zone B - nhà vệ sinh
   { x: 15, y: 11 }, // Zone C - phòng R&D
   { x: 13, y: 13 }, // Zone C - góc dưới
-  { x: 6,  y: 10 }, // Hành lang giữa
-  { x: 9,  y: 12 }, // Khu giữa tầng dưới
-  { x: 5,  y: 3  }, // Zone A - trái
+  { x: 6, y: 10 }, // Hành lang giữa
+  { x: 9, y: 12 }, // Khu giữa tầng dưới
+  { x: 5, y: 3 }, // Zone A - trái
 ]
 
 const FLOOR_BOUNDS = { minX: 0.5, maxX: 18.5, minY: 0.5, maxY: 14.5 }
@@ -46,14 +46,14 @@ const mat = {
       )
     )
   },
-  add:    (A, B) => A.map((r, i) => r.map((v, j) => v + B[i][j])),
-  sub:    (A, B) => A.map((r, i) => r.map((v, j) => v - B[i][j])),
-  T:      (A)    => A[0].map((_, j) => A.map(r => r[j])),
-  inv2:   ([[a, b], [c, d]]) => { const det = a * d - b * c; return [[d/det,-b/det],[-c/det,a/det]] },
+  add: (A, B) => A.map((r, i) => r.map((v, j) => v + B[i][j])),
+  sub: (A, B) => A.map((r, i) => r.map((v, j) => v - B[i][j])),
+  T: (A) => A[0].map((_, j) => A.map(r => r[j])),
+  inv2: ([[a, b], [c, d]]) => { const det = a * d - b * c; return [[d / det, -b / det], [-c / det, a / det]] },
   mulVec: (A, v) => A.map(r => r.reduce((s, a, j) => s + a * v[j], 0)),
   addVec: (a, b) => a.map((v, i) => v + b[i]),
   subVec: (a, b) => a.map((v, i) => v - b[i]),
-  eye:    (n)    => Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => (i === j ? 1 : 0)))
+  eye: (n) => Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => (i === j ? 1 : 0)))
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -64,11 +64,11 @@ const mat = {
 class KalmanFilter2D {
   constructor() {
     const dt = 0.1 // 10 Hz
-    this.F = [[1,0,dt,0],[0,1,0,dt],[0,0,1,0],[0,0,0,1]] // Ma trận chuyển trạng thái
-    this.H = [[1,0,0,0],[0,1,0,0]]                         // Ma trận quan sát
-    this.Q = [[0.05,0,0,0],[0,0.05,0,0],[0,0,0.5,0],[0,0,0,0.5]] // Nhiễu quá trình
-    this.R = [[0.04,0],[0,0.04]]                           // Nhiễu đo UWB ~±20cm
-    this.P = [[10,0,0,0],[0,10,0,0],[0,0,1,0],[0,0,0,1]]  // Hiệp phương sai ban đầu
+    this.F = [[1, 0, dt, 0], [0, 1, 0, dt], [0, 0, 1, 0], [0, 0, 0, 1]] // Ma trận chuyển trạng thái
+    this.H = [[1, 0, 0, 0], [0, 1, 0, 0]]                         // Ma trận quan sát  
+    this.Q = [[0.05, 0, 0, 0], [0, 0.05, 0, 0], [0, 0, 0.5, 0], [0, 0, 0, 0.5]] // Nhiễu quá trình
+    this.R = [[0.04, 0], [0, 0.04]]                           // Nhiễu đo UWB ~±20cm
+    this.P = [[10, 0, 0, 0], [0, 10, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]  // Hiệp phương sai ban đầu
     this.x = null                                           // Trạng thái (khởi tạo lần đầu)
   }
 
@@ -79,10 +79,10 @@ class KalmanFilter2D {
     const xp = mulVec(this.F, this.x)
     const Pp = add(mul(mul(this.F, this.P), T(this.F)), this.Q)
     // Update
-    const z     = [zx, zy]
+    const z = [zx, zy]
     const innov = subVec(z, mulVec(this.H, xp))
-    const S     = add(mul(mul(this.H, Pp), T(this.H)), this.R)
-    const K     = mul(mul(Pp, T(this.H)), inv2(S))
+    const S = add(mul(mul(this.H, Pp), T(this.H)), this.R)
+    const K = mul(mul(Pp, T(this.H)), inv2(S))
     this.x = addVec(xp, mulVec(K, innov))
     this.P = mul(sub(eye(4), mul(K, this.H)), Pp)
     return { x: this.x[0], y: this.x[1] }
@@ -113,10 +113,10 @@ function trilaterate(anchors, distances) {
   for (let i = 0; i < n - 1; i++) {
     const ai = anchors[i], di = distances[i]
     A.push([-2 * (ai.x - refA.x), -2 * (ai.y - refA.y)])
-    b.push(di*di - refD*refD - ai.x*ai.x + refA.x*refA.x - ai.y*ai.y + refA.y*refA.y)
+    b.push(di * di - refD * refD - ai.x * ai.x + refA.x * refA.x - ai.y * ai.y + refA.y * refA.y)
   }
   const AT = A[0].map((_, j) => A.map(row => row[j]))
-  const ATA = [[0,0],[0,0]]
+  const ATA = [[0, 0], [0, 0]]
   for (let i = 0; i < 2; i++)
     for (let j = 0; j < 2; j++)
       for (let k = 0; k < n - 1; k++) ATA[i][j] += AT[i][k] * A[k][j]
@@ -126,11 +126,11 @@ function trilaterate(anchors, distances) {
   const [[a, bv], [c, d]] = ATA
   const det = a * d - bv * c
   if (Math.abs(det) < 1e-10) {
-    return { x: anchors.reduce((s,a)=>s+a.x,0)/n, y: anchors.reduce((s,a)=>s+a.y,0)/n }
+    return { x: anchors.reduce((s, a) => s + a.x, 0) / n, y: anchors.reduce((s, a) => s + a.y, 0) / n }
   }
-  const inv = [[(d/det),(-bv/det)],[(-c/det),(a/det)]]
-  const x = inv[0][0]*ATb[0] + inv[0][1]*ATb[1]
-  const y = inv[1][0]*ATb[0] + inv[1][1]*ATb[1]
+  const inv = [[(d / det), (-bv / det)], [(-c / det), (a / det)]]
+  const x = inv[0][0] * ATb[0] + inv[0][1] * ATb[1]
+  const y = inv[1][0] * ATb[0] + inv[1][1] * ATb[1]
   return {
     x: Math.max(FLOOR_BOUNDS.minX, Math.min(FLOOR_BOUNDS.maxX, x)),
     y: Math.max(FLOOR_BOUNDS.minY, Math.min(FLOOR_BOUNDS.maxY, y))
@@ -171,12 +171,12 @@ async function initEmployees() {
     const data = await response.json()
     if (Array.isArray(data) && data.length > 0) {
       employees = data.map(emp => ({
-        tag_id:    emp.tag_id,
-        name:      emp.name,
-        x:         2 + Math.random() * 14,
-        y:         2 + Math.random() * 10,
-        target:    randomWaypoint(null),
-        speed:     0.015 + Math.random() * 0.01,
+        tag_id: emp.tag_id,
+        name: emp.name,
+        x: 2 + Math.random() * 14,
+        y: 2 + Math.random() * 10,
+        target: randomWaypoint(null),
+        speed: 0.015 + Math.random() * 0.01,
         waitTicks: 0
       }))
       console.log(`[Simulator] Loaded ${employees.length} employees from API (${API_URL})`)
@@ -187,9 +187,9 @@ async function initEmployees() {
   }
 
   employees = [
-    { tag_id: 'EMP_001', name: 'Nguyễn Văn A', x: 8,  y: 4,  target: randomWaypoint(null), speed: 0.02,  waitTicks: 0 },
-    { tag_id: 'EMP_002', name: 'Trần Thị B',   x: 2,  y: 11, target: randomWaypoint(null), speed: 0.015, waitTicks: 0 },
-    { tag_id: 'EMP_003', name: 'Lê Văn C',     x: 15, y: 11, target: randomWaypoint(null), speed: 0.025, waitTicks: 0 },
+    { tag_id: 'EMP_001', name: 'Nguyễn Văn A', x: 8, y: 4, target: randomWaypoint(null), speed: 0.02, waitTicks: 0 },
+    { tag_id: 'EMP_002', name: 'Trần Thị B', x: 2, y: 11, target: randomWaypoint(null), speed: 0.015, waitTicks: 0 },
+    { tag_id: 'EMP_003', name: 'Lê Văn C', x: 15, y: 11, target: randomWaypoint(null), speed: 0.025, waitTicks: 0 },
   ]
 }
 
@@ -220,7 +220,7 @@ client.on('connect', async () => {
         })
         employees = employees.filter(e => data.some(d => d.tag_id === e.tag_id))
       }
-    } catch (_) {}
+    } catch (_) { }
   }, 5000)
 
   // Main loop — 10 ticks/giây
@@ -248,16 +248,16 @@ client.on('connect', async () => {
 
       // 5. Publish lên MQTT — backend chỉ nhận tọa độ đã xử lý hoàn chỉnh
       const payload = {
-        tag_id:    cur.tag_id,
-        x:         parseFloat(filtered.x.toFixed(3)),   // đã qua Kalman
-        y:         parseFloat(filtered.y.toFixed(3)),   // đã qua Kalman
-        x_raw:     parseFloat(estimated.x.toFixed(3)), // tọa độ thô (visualize Tri)
-        y_raw:     parseFloat(estimated.y.toFixed(3)),
+        tag_id: cur.tag_id,
+        x: parseFloat(filtered.x.toFixed(3)),   // đã qua Kalman
+        y: parseFloat(filtered.y.toFixed(3)),   // đã qua Kalman
+        x_raw: parseFloat(estimated.x.toFixed(3)), // tọa độ thô (visualize Tri)
+        y_raw: parseFloat(estimated.y.toFixed(3)),
         timestamp: new Date().toISOString(),
         anchor_distances: ANCHORS.map((a, i) => ({
-          id:   a.id,
-          x:    a.x,
-          y:    a.y,
+          id: a.id,
+          x: a.x,
+          y: a.y,
           dist: parseFloat(distances[i].toFixed(3))
         }))
       }

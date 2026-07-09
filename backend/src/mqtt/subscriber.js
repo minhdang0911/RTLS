@@ -5,9 +5,9 @@ import { Location, ZoneEvent, ZoneAccess, Attendance } from '../db/models.js'
 // ─────────────────────────────────────────────────────────────────────────────
 // State management
 // ─────────────────────────────────────────────────────────────────────────────
-const employeeState    = {}   // zone state machine
-const saveCounter      = {}   // throttle ghi MongoDB location
-const attendanceTick   = {}   // throttle cập nhật attendance
+const employeeState = {}   // zone state machine
+const saveCounter = {}   // throttle ghi MongoDB location
+const attendanceTick = {}   // throttle cập nhật attendance
 
 let wsClients = []
 export const setWsClients = (clients) => { wsClients = clients }
@@ -27,7 +27,7 @@ async function updateAttendance(tag_id) {
   if (attendanceTick[tag_id] % 600 !== 1) return
 
   const today = new Date().toISOString().split('T')[0]
-  const now   = new Date()
+  const now = new Date()
 
   try {
     const existing = await Attendance.findOne({ tag_id, date: today })
@@ -49,7 +49,7 @@ async function updateAttendance(tag_id) {
 // MQTT Subscriber chính
 // ─────────────────────────────────────────────────────────────────────────────
 const startSubscriber = () => {
-  const MQTT_URL   = process.env.MQTT_URL || process.env.MQTT_BROKER_URL || 'mqtt://broker.hivemq.com:1883'
+  const MQTT_URL = process.env.MQTT_URL || process.env.MQTT_BROKER_URL || 'mqtt://broker.hivemq.com:1883'
   const MQTT_TOPIC = process.env.MQTT_TOPIC || 'rtls/location/ikyrts_dashboard'
   const client = mqtt.connect(MQTT_URL)
 
@@ -63,7 +63,14 @@ const startSubscriber = () => {
       const data = JSON.parse(message.toString())
       // x, y đã qua Trilateration + Kalman trong simulator/firmware
       // Backend chỉ cần nhận và xử lý business logic
-      const { tag_id, x, y, anchor_distances } = data
+      const {
+        tag_id,
+        x,
+        y,
+        x_raw,
+        y_raw,
+        anchor_distances
+      } = data
 
       // ── Zone detection ──
       const currentZone = detectZone(x, y)
@@ -76,7 +83,7 @@ const startSubscriber = () => {
       }
 
       // ── Cập nhật Attendance ──
-      updateAttendance(tag_id).catch(() => {})
+      updateAttendance(tag_id).catch(() => { })
 
       // ── Zone state machine ──
       const prevState = employeeState[tag_id]
