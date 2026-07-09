@@ -1,4 +1,12 @@
-import ZONES from './config.js'
+let cachedZones = []
+
+export function setCachedZones(zones) {
+  cachedZones = zones
+}
+
+export function getCachedZones() {
+  return cachedZones
+}
 
 // Ray casting — đếm số lần tia cắt cạnh polygon
 // Lẻ = trong polygon, chẵn = ngoài
@@ -20,12 +28,10 @@ function pointInPolygon(point, polygon) {
 
 // Tìm zone chứa điểm (x, y)
 export function detectZone(x, y) {
-  for (const zone of ZONES) {
+  for (const zone of cachedZones) {
     if (pointInPolygon({ x, y }, zone.polygon)) {
       return zone
     }
   }
   return null // ngoài tất cả zone
-}
-
-export default ZONES
+}

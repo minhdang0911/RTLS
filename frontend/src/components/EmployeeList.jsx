@@ -1,5 +1,4 @@
 import { LogIn, LogOut, Clock, Inbox, MapPin } from 'lucide-react'
-import { EMPLOYEES, getZoneById } from '../utils/zoneColors'
 
 const formatDuration = (seconds) => {
   if (!seconds) return null
@@ -7,25 +6,25 @@ const formatDuration = (seconds) => {
   return `${Math.floor(seconds / 60)}m ${seconds % 60}s`
 }
 
-const EmployeeCard = ({ emp }) => {
-  const info = EMPLOYEES[emp.tag_id]
-  const zone = getZoneById(emp.zone_id)
+const EmployeeCard = ({ emp, zone }) => {
+  const name = emp.name || emp.tag_id
+  const color = emp.color || '#888888'
 
   return (
-    <div className="emp-card" style={{ borderLeftColor: info?.color || '#333' }}>
+    <div className="emp-card" style={{ borderLeftColor: color }}>
       <div
         className="emp-avatar"
         style={{
-          background: (info?.color || '#555') + '1A',
-          border: `1.5px solid ${(info?.color || '#555')}44`,
-          color: info?.color || '#888',
+          background: color + '1A',
+          border: `1.5px solid ${color}44`,
+          color: color,
         }}
       >
         {emp.tag_id.replace('EMP_', '')}
       </div>
 
       <div className="emp-info">
-        <div className="emp-name">{info?.name || emp.tag_id}</div>
+        <div className="emp-name">{name}</div>
         <div className="emp-zone">
           <span
             className="zone-dot"
@@ -48,9 +47,8 @@ const EmployeeCard = ({ emp }) => {
   )
 }
 
-const ActivityItem = ({ event }) => {
-  const info = EMPLOYEES[event.tag_id]
-  const zone = getZoneById(event.zone_id)
+const ActivityItem = ({ event, zone, employees = {} }) => {
+  const info = employees[event.tag_id]
   const isEnter = event.type === 'ZONE_ENTER'
   const duration = formatDuration(event.duration_seconds)
 
@@ -83,8 +81,9 @@ const ActivityItem = ({ event }) => {
   )
 }
 
-const EmployeeList = ({ employees, zoneEvents }) => {
+const EmployeeList = ({ employees, zoneEvents, zones = [] }) => {
   const empList = Object.values(employees)
+  const findZoneById = (id) => zones.find(z => z.id === id)
 
   return (
     <>
@@ -115,7 +114,13 @@ const EmployeeList = ({ employees, zoneEvents }) => {
             </div>
           ) : (
             <div className="emp-list">
-              {empList.map(emp => <EmployeeCard key={emp.tag_id} emp={emp} />)}
+              {empList.map(emp => (
+                <EmployeeCard 
+                  key={emp.tag_id} 
+                  emp={emp} 
+                  zone={findZoneById(emp.zone_id)} 
+                />
+              ))}
             </div>
           )}
         </div>
@@ -148,7 +153,12 @@ const EmployeeList = ({ employees, zoneEvents }) => {
           ) : (
             <div className="activity-list">
               {zoneEvents.map((event, i) => (
-                <ActivityItem key={i} event={event} />
+                <ActivityItem 
+                  key={i} 
+                  event={event} 
+                  zone={findZoneById(event.zone_id)} 
+                  employees={employees}
+                />
               ))}
             </div>
           )}
