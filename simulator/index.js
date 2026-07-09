@@ -1,9 +1,13 @@
 import mqtt from 'mqtt'
+import { config } from 'dotenv'
+config() // load .env nếu có (VPS: tạo từ .env.example)
 
 // ─── Config từ biến môi trường (hỗ trợ cả local lẫn VPS) ─────────────────
 const MQTT_URL = process.env.MQTT_URL    || 'mqtt://broker.hivemq.com:1883'
 const API_URL  = process.env.API_URL     || 'http://localhost:3003'
 const MQTT_TOPIC = process.env.MQTT_TOPIC || 'rtls/location/ikyrts_dashboard'
+
+console.log(`[Simulator] Config: MQTT=${MQTT_URL}, API=${API_URL}, TOPIC=${MQTT_TOPIC}`)
 
 const client = mqtt.connect(MQTT_URL)
 
