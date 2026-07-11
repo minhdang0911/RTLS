@@ -403,6 +403,27 @@ const start = async () => {
 
   setWsClients(clients)
 
+  // ─── Auto cleanup — chạy mỗi 30 phút, xóa data cũ tránh tràn Atlas ───────
+  const runCleanup = async () => {
+    try {
+      const locCutoff = new Date(Date.now() - 4 * 3600 * 1000)          // cũ hơn 4h
+      const evtCutoff = new Date(Date.now() - 7 * 24 * 3600 * 1000)    // cũ hơn 7 ngày
+      const locResult = await Location.deleteMany({ timestamp: { $lt: locCutoff } })
+      const evtResult = await ZoneEvent.deleteMany({ entered_at: { $lt: evtCutoff } })
+      if (locResult.deletedCount > 0 || evtResult.deletedCount > 0) {
+        console.log(`[AutoClean] Deleted ${locResult.deletedCount} locations, ${evtResult.deletedCount} zone events`)
+      }
+    } catch (err) {
+      console.error('[AutoClean] Error:', err.message)
+    }
+  }
+  runCleanup() // chạy ngay lúc khởi động để dọn data cũ
+  // Xóa toàn bộ zone events khi startup (giải phóng quota ngay)
+  ZoneEvent.deleteMany({}).then(r => {
+    if (r.deletedCount > 0) console.log(`[AutoClean] Startup: purged ${r.deletedCount} zone events`)
+  }).catch(() => {})
+  setInterval(runCleanup, 30 * 60 * 1000) // sau đó mỗi 30 phút
+
   setTimeout(() => {
     startSubscriber(process.env.MQTT_BROKER_URL)
   }, 1000)

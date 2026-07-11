@@ -6,8 +6,11 @@ import { Location, ZoneEvent, ZoneAccess, Attendance } from '../db/models.js'
 // State management
 // ─────────────────────────────────────────────────────────────────────────────
 const employeeState = {}   // zone state machine
+const zonePending = {}     // debounce zone enter — tránh flickering
 const saveCounter = {}   // throttle ghi MongoDB location
 const attendanceTick = {}   // throttle cập nhật attendance
+
+const ZONE_DEBOUNCE_MS = 3000  // phải ở trong zone ≥ 3s mới tạo event
 
 let wsClients = []
 export const setWsClients = (clients) => { wsClients = clients }
@@ -103,34 +106,50 @@ const startSubscriber = () => {
         employeeState[tag_id] = null
       }
 
-      // Case 2: Vào zone mới
+      // Case 2: Vào zone mới — debounce 3s tránh flickering
       if (zone_id && (!prevState || prevState.zone_id !== zone_id)) {
-        // Kiểm tra Access Control — có bị cấm vào zone này không?
-        const accessRule = await ZoneAccess.findOne({ zone_id, tag_id })
-        if (accessRule && accessRule.allowed === false) {
-          broadcast({
-            type: 'ZONE_UNAUTHORIZED',
-            tag_id,
-            zone_id,
-            zone_name: currentZone.name,
-            message: `Nhân viên không được phép vào ${currentZone.name}`
-          })
-          console.log(`[Access] UNAUTHORIZED: ${tag_id} tried to enter ${currentZone.name}`)
-        }
+        const pending = zonePending[tag_id]
 
-        const event = await ZoneEvent.create({
-          tag_id,
-          zone_id,
-          zone_name: currentZone.name,
-          entered_at: new Date()
-        })
-        employeeState[tag_id] = {
-          zone_id,
-          entered_at: Date.now(),
-          event_id: event._id,
-          alert_triggered: false
+        // Nếu chưa có pending cho zone này → bắt đầu đếm
+        if (!pending || pending.zone_id !== zone_id) {
+          // Hủy pending cũ nếu có
+          if (pending?.timer) clearTimeout(pending.timer)
+
+          zonePending[tag_id] = {
+            zone_id,
+            timer: setTimeout(async () => {
+              delete zonePending[tag_id]
+              // Kiểm tra tag vẫn đang ở zone đó
+              const cur = employeeState[tag_id]
+              if (cur && cur.zone_id === zone_id) return // đã được xử lý rồi
+
+              // Access Control
+              const accessRule = await ZoneAccess.findOne({ zone_id, tag_id })
+              if (accessRule && accessRule.allowed === false) {
+                broadcast({
+                  type: 'ZONE_UNAUTHORIZED',
+                  tag_id, zone_id,
+                  zone_name: currentZone.name,
+                  message: `Nhân viên không được phép vào ${currentZone.name}`
+                })
+                console.log(`[Access] UNAUTHORIZED: ${tag_id} tried to enter ${currentZone.name}`)
+              }
+
+              const event = await ZoneEvent.create({
+                tag_id, zone_id,
+                zone_name: currentZone.name,
+                entered_at: new Date()
+              })
+              employeeState[tag_id] = {
+                zone_id,
+                entered_at: Date.now(),
+                event_id: event._id,
+                alert_triggered: false
+              }
+              broadcast({ type: 'ZONE_ENTER', tag_id, zone_id, zone_name: currentZone.name })
+            }, ZONE_DEBOUNCE_MS)
+          }
         }
-        broadcast({ type: 'ZONE_ENTER', tag_id, zone_id, zone_name: currentZone.name })
       }
 
       // Case 3: Ở lại zone — kiểm tra overtime alert

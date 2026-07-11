@@ -20,8 +20,8 @@ const zoneEventSchema = new mongoose.Schema({
   exited_at:        { type: Date,   default: null },
   duration_seconds: { type: Number, default: null }
 })
-// Tự xóa sau 30 ngày
-zoneEventSchema.index({ entered_at: 1 }, { expireAfterSeconds: 2592000 })
+// Tự xóa sau 7 ngày
+zoneEventSchema.index({ entered_at: 1 }, { expireAfterSeconds: 604800 })
 
 // Zone configurations — lưu cấu hình các khu vực
 const zoneSchema = new mongoose.Schema({
